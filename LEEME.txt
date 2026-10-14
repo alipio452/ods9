@@ -1,0 +1,8 @@
+1) Abre server/.env y pega tu clave de OpenRouter despues de OPENROUTER_API_KEY=
+   (sin comillas ni espacios).
+2) En una terminal:
+     cd server
+     npm install
+     npm start
+3) Abre http://localhost:3000  (no abras index.html con doble clic)
+Al arrancar debe decir: Proveedor: openrouter · modelo: openrouter/free

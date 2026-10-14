@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AGRO RAIN 3D · Captación de lluvia y riego inteligente</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-mode="auto">
+
+  <!-- Pantalla de carga (controlada por main.js) -->
+  <div id="loading-overlay">
+    <div class="loader-box">
+      <div class="loader-logo">🌧️🌱</div>
+      <h1>AGRO RAIN 3D</h1>
+      <div class="loader-track"><div id="loader-bar"></div></div>
+      <p id="loader-text">Cargando…</p>
+    </div>
+  </div>
+
+  <header class="topbar">
+    <div>
+      <h1>🌧️ AGRO RAIN 3D</h1>
+      <p>Simulación de captación de agua lluvia y riego inteligente con sensores de humedad</p>
+    </div>
+  </header>
+
+  <main class="layout">
+
+    <!-- Escena 3D -->
+    <section class="stage">
+      <div class="toolbar">
+        <button id="btn-rain" class="btn" type="button">🌧️ <span id="btn-rain-text">Iniciar lluvia</span></button>
+        <button id="btn-mode" class="btn" type="button">⚙️ <span id="btn-mode-text">Modo automático</span></button>
+        <button id="btn-reset" class="btn" type="button">↺ Reiniciar</button>
+        <span class="toolbar-sep"></span>
+        <button class="btn btn-small active" type="button" data-focus="overview">Vista general</button>
+        <button class="btn btn-small" type="button" data-focus="tank">Tanque</button>
+        <button class="btn btn-small" type="button" data-focus="pump">Bomba</button>
+        <button class="btn btn-small" type="button" data-focus="crops">Cultivos</button>
+        <button class="btn btn-small" type="button" data-focus="sensors">Sensores</button>
+      </div>
+      <div id="scene-container" aria-label="Escena 3D de la finca"></div>
+    </section>
+
+    <!-- Panel lateral -->
+    <aside class="side">
+
+      <section class="panel">
+        <h2>Indicadores</h2>
+        <div class="ind-grid">
+          <div class="ind">
+            <span class="ind-label">Agua almacenada</span>
+            <span class="ind-value"><b id="ind-stored">0</b> / <span id="ind-capacity">5000</span> L</span>
+            <div class="bar"><div id="bar-stored" class="bar-fill blue"></div></div>
+          </div>
+          <div class="ind">
+            <span class="ind-label">Humedad promedio</span>
+            <span class="ind-value"><b id="ind-avg-humidity">0</b> %</span>
+            <div class="bar"><div id="bar-avg-humidity" class="bar-fill green"></div></div>
+          </div>
+          <div class="ind"><span class="ind-label">Recolectada</span><span class="ind-value"><b id="ind-collected">0 L</b></span></div>
+          <div class="ind"><span class="ind-label">Consumida</span><span class="ind-value"><b id="ind-consumed">0 L</b></span></div>
+          <div class="ind"><span class="ind-label">Bomba</span><span class="ind-value"><b id="ind-pump" class="pump-state">Inactiva</b></span></div>
+          <div class="ind"><span class="ind-label">Necesitan riego</span><span class="ind-value"><b id="ind-zones-need">0 zonas</b></span></div>
+        </div>
+        <div class="tank-quick">
+          <span>Ajustar tanque:</span>
+          <button id="tank-empty" class="btn btn-small" type="button">Vacío</button>
+          <button id="tank-half" class="btn btn-small" type="button">50 %</button>
+          <button id="tank-full" class="btn btn-small" type="button">Lleno</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Zonas de cultivo</h2>
+        <div id="zones-container"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Configuración</h2>
+        <div class="cfg">
+          <label for="cfg-capacity">Capacidad del tanque <b id="val-capacity">5000 L</b></label>
+          <input id="cfg-capacity" type="range" min="1000" max="20000" step="500" value="5000">
+
+          <label for="cfg-rain-rate">Captación de lluvia <b id="val-rain-rate">14 L/s</b></label>
+          <input id="cfg-rain-rate" type="range" min="2" max="40" step="1" value="14">
+
+          <label for="cfg-threshold">Umbral de riego <b id="val-threshold">30 %</b></label>
+          <input id="cfg-threshold" type="range" min="10" max="60" step="1" value="30">
+
+          <label for="cfg-target">Humedad objetivo <b id="val-target">70 %</b></label>
+          <input id="cfg-target" type="range" min="50" max="95" step="1" value="70">
+
+          <label for="cfg-consumption">Consumo por zona <b id="val-consumption">8 L/s</b></label>
+          <input id="cfg-consumption" type="range" min="2" max="20" step="1" value="8">
+
+          <label for="cfg-recovery">Recuperación al regar <b id="val-recovery">5 %/s</b></label>
+          <input id="cfg-recovery" type="range" min="1" max="15" step="1" value="5">
+
+          <label for="cfg-evaporation">Evaporación <b id="val-evaporation">0.35 %/s</b></label>
+          <input id="cfg-evaporation" type="range" min="0.05" max="1.5" step="0.05" value="0.35">
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <!-- Gráficas, eventos e impacto -->
+  <section class="lower">
+    <div class="panel"><h2>Humedad por zona</h2><div class="chart-box"><canvas id="chart-humidity"></canvas></div></div>
+    <div class="panel"><h2>Nivel del tanque</h2><div class="chart-box"><canvas id="chart-tank"></canvas></div></div>
+    <div class="panel"><h2>Recolectada vs. consumida</h2><div class="chart-box"><canvas id="chart-flow"></canvas></div></div>
+
+    <div class="panel">
+      <h2>Historial de eventos</h2>
+      <ul id="event-list" class="event-list"></ul>
+    </div>
+    <div class="panel">
+      <h2>Impacto ambiental</h2>
+      <div class="impact">
+        <div><span>Agua de lluvia aprovechada</span><b id="impact-harvested">0 L</b></div>
+        <div><span>Agua consumida en riego</span><b id="impact-consumed">0 L</b></div>
+        <div><span>Proporción recolectada</span><b id="impact-efficiency">—</b></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AgroBot AI: agrobot.js se incrusta dentro de #agrobot-section -->
+  <section class="panel agrobot-wrap">
+    <h2>🤖 AgroBot AI</h2>
+    <div id="agrobot-section"></div>
+  </section>
+
+  <footer class="foot">AGRO RAIN 3D · simulación educativa · los datos del sistema son simulados</footer>
+
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- Librerías (Three.js r128 expone THREE.OrbitControls como global) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Proyecto (el orden importa) -->
+  <script src="simulation.js"></script>
+  <script src="scene3d.js"></script>
+  <script src="charts.js"></script>
+  <script src="ui.js"></script>
+  <script src="agrobot.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>
